@@ -1,10 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../helpers.dart';
+import '../providers/helpers.dart';
 import '../models/product.dart';
-import '../widgets/product_card.dart';
-import 'product_detail_screen.dart';
+import '../providers/responsive.dart';
+import '../widgets/products_grid.dart';
 
 String pinCode = '';
 List<Product> products = [];
@@ -55,69 +54,16 @@ class _HomeScreenState extends State<HomeScreen> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        actions: [
-          TextButton(
-              onPressed: _getPincodeFromUser,
-              child: Text(pinCode.isEmpty ? 'PIN CODE' : 'PIN: $pinCode'))
-        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-              padding: const EdgeInsets.all(8.0),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 8.0,
-                childAspectRatio: 0.7,
-              ),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return InkWell(
-                    onTap: () => Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                            builder: (_) => ProductDetailScreen(
-                                  product: product,
-                                  isAvailable: stockAvailability[product.id]!,
-                                ))),
-                    child: ProductCard(product: product));
-              },
+          : const Responsive(
+              mobile: ProductsGridView(crossAxisCount: 2),
+              mobileMedium: ProductsGridView(crossAxisCount: 3),
+              mobileLarge: ProductsGridView(crossAxisCount: 4),
+              tablet: ProductsGridView(crossAxisCount: 5),
+              desktop: ProductsGridView(crossAxisCount: 7),
             ),
-    );
-  }
-
-  // Show dialog to get pincode from user
-  Future<void> _getPincodeFromUser() async {
-    final pincodeController = TextEditingController();
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Enter Pincode"),
-        content: TextField(
-          controller: pincodeController,
-          decoration: const InputDecoration(
-            hintText: "Enter pincode",
-          ),
-          keyboardType: TextInputType.number,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              if (pincodeController.text.trim().length == 6) {
-                setState(() {
-                  pinCode = pincodeController.text;
-                });
-                Navigator.of(context).pop();
-              } else {
-                return;
-              }
-            },
-            child: const Text("Submit"),
-          ),
-        ],
-      ),
     );
   }
 }

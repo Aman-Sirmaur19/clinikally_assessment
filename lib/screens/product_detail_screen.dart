@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../helpers.dart';
+import '../providers/helpers.dart';
 import '../models/product.dart';
+import '../providers/pincode_dialog.dart';
 import 'home_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -20,10 +23,78 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _currentImageIndex = 0;
-  final pinCodeDetails = Helpers.getPinCodeData(pinCode);
+  Map<String, dynamic> pinCodeDetails = Helpers.getPinCodeData(pinCode);
+  int orderDeadlineHour = 0;
+  Timer? _timer;
+  Duration _timeLeft = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    orderDeadlineHour =
+        pinCodeDetails['Logistics Provider'] == 'Provider A' ? 17 : 9;
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    DateTime now = DateTime.now();
+    DateTime orderDeadline = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      orderDeadlineHour,
+    );
+
+    if (now.isBefore(orderDeadline)) {
+      _timeLeft = orderDeadline.difference(now);
+
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          if (_timeLeft.inSeconds > 0) {
+            _timeLeft = _timeLeft - const Duration(seconds: 1);
+          } else {
+            _timer?.cancel();
+          }
+        });
+      });
+    }
+  }
+
+  void _showPinCodeDialog() async {
+    await PinCodeAlertDialog.getPinCodeFromUser(context);
+    pinCodeDetails = Helpers.getPinCodeData(pinCode);
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    String deliveryMsg = "Provider Not Available";
+    int time = DateTime.now().hour;
+    if (widget.isAvailable && pinCode.isNotEmpty) {
+      if (pinCodeDetails['Logistics Provider'] == 'Provider A') {
+        if (time < 17) {
+          deliveryMsg = 'Delivery by TODAY, if ordered before 5 PM';
+        } else {
+          deliveryMsg = 'Delivery in ${pinCodeDetails['TAT']} days';
+        }
+      } else if (pinCodeDetails['Logistics Provider'] == 'Provider B') {
+        if (time < 9) {
+          deliveryMsg = 'Delivery by TODAY, if ordered before 9 AM';
+        } else {
+          deliveryMsg = 'Delivery by TOMORROW';
+          orderDeadlineHour = 0;
+        }
+      } else {
+        deliveryMsg = 'Delivery in ${pinCodeDetails['TAT']} days';
+        orderDeadlineHour = 0;
+      }
+    }
     return Scaffold(
       backgroundColor: Colors.grey.shade200,
       appBar: AppBar(
@@ -41,12 +112,58 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () {},
+            onPressed: _showPinCodeDialog,
             child: Text(pinCode.isEmpty ? 'PIN CODE' : 'PIN: $pinCode'),
           )
         ],
       ),
-      body: Padding(
+      bottomNavigationBar: BottomAppBar(
+        height: 50,
+        shape: const CircularNotchedRectangle(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            ElevatedButton.icon(
+              onPressed: widget.isAvailable ? () {} : null,
+              icon: const Icon(Icons.shopping_cart_rounded),
+              label: const Text('Add to cart'),
+              style: ButtonStyle(
+                iconColor: MaterialStateProperty.all(
+                    widget.isAvailable ? Colors.black : Colors.black26),
+                backgroundColor: MaterialStateProperty.all(widget.isAvailable
+                    ? Colors.lightGreen
+                    : Colors.lightGreen.shade300),
+                foregroundColor: MaterialStateProperty.all(
+                    widget.isAvailable ? Colors.black : Colors.black38),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: widget.isAvailable
+                  ? () {
+                      if (pinCode.isNotEmpty) {
+                      } else {
+                        _showPinCodeDialog();
+                      }
+                    }
+                  : null,
+              icon: const Icon(Icons.shopping_basket_rounded),
+              label: const Text('Buy now'),
+              style: ButtonStyle(
+                iconColor: MaterialStateProperty.all(
+                    widget.isAvailable ? Colors.black : Colors.black26),
+                backgroundColor: MaterialStateProperty.all(Colors.amber),
+                foregroundColor: MaterialStateProperty.all(
+                    widget.isAvailable ? Colors.black : Colors.black38),
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: body(deliveryMsg),
+    );
+  }
+
+  Widget body(String deliveryMsg) => Padding(
         padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
         child: ListView(
           children: [
@@ -127,9 +244,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: [
                         IconButton(
                             onPressed: () {},
+                            tooltip: 'Add to favourites',
                             icon: const Icon(Icons.favorite_border_rounded)),
                         IconButton(
                             onPressed: () {},
+                            tooltip: 'Share',
                             icon: const Icon(Icons.share_outlined)),
                       ],
                     ),
@@ -153,15 +272,40 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             if (pinCode.isNotEmpty)
               ListTile(
-                title: Text(pinCodeDetails['Logistics Provider'] ??
-                    "Provider Not Available"),
-                subtitle: Text("TAT: ${pinCodeDetails['TAT'] ?? "N/A"}"),
-                trailing:
-                    Text("Pincode: ${pinCodeDetails['Pincode'] ?? ""}"),
+                leading: const Icon(Icons.local_shipping_outlined),
+                title: Text(
+                  deliveryMsg,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                trailing: (_timeLeft != Duration.zero && widget.isAvailable)
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.timer_outlined, color: Colors.red),
+                          const Text(
+                            ' Time left: ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                          Text(
+                            '${_timeLeft.inHours.toString().padLeft(2, '0')}:${(_timeLeft.inMinutes % 60).toString().padLeft(2, '0')}:${(_timeLeft.inSeconds % 60).toString().padLeft(2, '0')}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      )
+                    : null,
               )
           ],
         ),
-      ),
-    );
-  }
+      );
 }

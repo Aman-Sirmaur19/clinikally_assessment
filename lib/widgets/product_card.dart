@@ -4,8 +4,10 @@ import '../models/product.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
+  final bool isAvailable;
 
-  const ProductCard({super.key, required this.product});
+  const ProductCard(
+      {super.key, required this.product, required this.isAvailable});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +17,8 @@ class ProductCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Expanded(
-            child: Icon(Icons.shopping_bag_rounded, size: 50), // Placeholder for image
+            child: Icon(Icons.shopping_bag_rounded,
+                size: 50), // Placeholder for image
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -24,8 +27,21 @@ class ProductCard extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text('₹${product.price}',
-                style: const TextStyle(color: Colors.green)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('₹${product.price}',
+                    style: const TextStyle(color: Colors.green)),
+                Text(
+                  isAvailable == true ? 'In Stock' : 'Out of Stock',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isAvailable == true ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

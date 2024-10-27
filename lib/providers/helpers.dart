@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:csv/csv.dart';
 import 'package:flutter/services.dart';
 
-import 'models/product.dart';
-import 'screens/home_screen.dart';
+import '../models/product.dart';
+import '../screens/home_screen.dart';
 
 class Helpers {
   static Future<void> loadProducts() async {
@@ -12,6 +12,7 @@ class Helpers {
       final csvData = await rootBundle.loadString('assets/csv/Products.csv');
       final List<List<dynamic>> csvTable =
           const CsvToListConverter().convert(csvData);
+
       products = csvTable
           .skip(1) // Skip header row
           .map((csvRow) => Product.fromCsv(csvRow))
@@ -54,7 +55,7 @@ class Helpers {
 
   static Map<String, dynamic> getPinCodeData(String userPincode) {
     return pinCodeData.firstWhere(
-          (entry) => entry['Pincode'] == userPincode,
+          (entry) => entry['Pincode'].toString() == userPincode,
       orElse: () => {},
     );
   }
