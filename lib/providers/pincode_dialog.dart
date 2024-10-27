@@ -32,7 +32,8 @@ class PinCodeAlertDialog {
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.purple),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.primary),
                   ),
                 ),
                 onCompleted: (value) {
@@ -46,7 +47,8 @@ class PinCodeAlertDialog {
                   TextButton(
                     onPressed: () {
                       if (int.tryParse(pinCode.toString()) != null &&
-                          int.tryParse(pinCode.toString())! > 99999) {
+                          int.tryParse(pinCode.toString())! > 99999 &&
+                          int.tryParse(pinCode.toString())! <= 125000) {
                         Navigator.of(context).pop(pinCode);
                       } else {
                         pinCode = '';
@@ -56,7 +58,7 @@ class PinCodeAlertDialog {
                             backgroundColor:
                                 Theme.of(context).colorScheme.error,
                             content: const Text(
-                                "Please enter a valid 6-digit pincode"),
+                                "Please enter a valid 6-digit pincode\n( between 100000 to 125000)"),
                           ),
                         );
                       }

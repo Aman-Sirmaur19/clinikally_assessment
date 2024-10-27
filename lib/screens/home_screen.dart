@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../providers/helpers.dart';
 import '../models/product.dart';
 import '../providers/responsive.dart';
+import '../widgets/main_drawer.dart';
 import '../widgets/products_grid.dart';
 
 String pinCode = '';
@@ -47,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade200,
       appBar: AppBar(
+        centerTitle: true,
         title: const Text(
           'Clinikally',
           style: TextStyle(
@@ -55,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      drawer: const MainDrawer(),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : const Responsive(
